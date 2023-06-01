@@ -1,0 +1,51 @@
+version: '3.8'
+
+volumes:
+  prometheus_data: {}
+
+services:
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    user: '0'
+    volumes:
+      - /root/grafana:/var/lib/grafana
+      
+  influxdb:
+    image: influxdb:latest
+    container_name: influxdb-v2
+    volumes:
+      - ./influxdb2:/var/lib/influxdb2:rw
+    ports:
+      - "8086:8086"
+      
+  node_exporter:
+    image: quay.io/prometheus/node-exporter:latest
+    container_name: node_exporter
+    command:
+      - '--path.rootfs=/host'
+    pid: host
+    restart: unless-stopped
+    volumes:
+      - '/:/host:ro,rslave'
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: unless-stopped
+    volumes:
+      - /root/Prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    ports:
+      - "9090:9090"
